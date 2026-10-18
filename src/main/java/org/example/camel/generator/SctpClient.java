@@ -1,6 +1,7 @@
 package org.example.camel.generator;
 
-import org.example.camel.generator.SctpAssociationListener;
+import org.mobicents.protocols.api.Association;
+import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.sctp.ManagementImpl;
 
 import java.io.IOException;
@@ -26,6 +27,7 @@ public class SctpClient {
 
         sctpManagement.start();
 
+        // Создаём association, если она отсутствует
         if (sctpManagement.getAssociation(ASSOCIATION_NAME) == null) {
 
             sctpManagement.addAssociation(
@@ -33,14 +35,29 @@ public class SctpClient {
                     LOCAL_PORT,
                     REMOTE_IP,
                     REMOTE_PORT,
-                    ASSOCIATION_NAME
+                    ASSOCIATION_NAME,
+                    IpChannelType.SCTP,
+                    null
             );
         }
 
-        sctpManagement.getAssociation(ASSOCIATION_NAME)
-                .setAssociationListener(new SctpAssociationListener());
+        Association association =
+                sctpManagement.getAssociation(ASSOCIATION_NAME);
 
-        sctpManagement.startAssociation(ASSOCIATION_NAME);
+        // Listener регистрируем при каждом запуске
+        association.setAssociationListener(new SctpAssociationListener());
+
+        // Запускаем association, если она ещё не запущена
+        if (!association.isStarted()) {
+
+            sctpManagement.startAssociation(ASSOCIATION_NAME);
+
+            System.out.println("SCTP association started");
+
+        } else {
+
+            System.out.println("SCTP association already started");
+        }
     }
 
     public void stop() throws Exception {
