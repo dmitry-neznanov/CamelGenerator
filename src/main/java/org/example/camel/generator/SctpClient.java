@@ -23,15 +23,19 @@ public class SctpClient {
     }
 
     public void start() throws Exception {
+
         sctpManagement.start();
 
-        sctpManagement.addAssociation(
-                LOCAL_IP,
-                LOCAL_PORT,
-                REMOTE_IP,
-                REMOTE_PORT,
-                ASSOCIATION_NAME
-        );
+        if (sctpManagement.getAssociation(ASSOCIATION_NAME) == null) {
+
+            sctpManagement.addAssociation(
+                    LOCAL_IP,
+                    LOCAL_PORT,
+                    REMOTE_IP,
+                    REMOTE_PORT,
+                    ASSOCIATION_NAME
+            );
+        }
 
         sctpManagement.getAssociation(ASSOCIATION_NAME)
                 .setAssociationListener(new SctpAssociationListener());
