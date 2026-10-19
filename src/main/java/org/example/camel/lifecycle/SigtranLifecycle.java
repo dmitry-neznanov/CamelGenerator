@@ -47,7 +47,8 @@ public class SigtranLifecycle implements SmartLifecycle {
             );
 
             capClient = new CapClient(
-                    tcapClient.getStack().getProvider()
+                    tcapClient.getStack().getProvider(),
+                    sccpClient.getStack().getSccpProvider()
             );
 
             capClient.start();
@@ -131,5 +132,9 @@ public class SigtranLifecycle implements SmartLifecycle {
 
     public TcapClient getTcapClient() {
         return tcapClient;
+    }
+
+    public CapClient getCapClient() {
+        return capClient;
     }
 }
