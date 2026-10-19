@@ -31,10 +31,12 @@ public class SccpClient {
     private static final int REMOTE_SPC_ID = 1;
     private static final int REMOTE_SSN_ID = 1;
     private static final int REMOTE_SSN = 8;
+    private static final int LOCAL_SSN = 8;
 
     private static final String LOCAL_GT_DIGITS = "";
 
     private final SccpStackImpl sccpStack;
+
 
     public SccpClient(M3UAManagementImpl m3uaManagement) {
         sccpStack = new SccpStackImpl(STACK_NAME, null);
@@ -51,6 +53,11 @@ public class SccpClient {
         configureDestination();
         configureRemoteSpc();
         configureRemoteSsn();
+
+        sccpStack.getSccpProvider().registerSccpListener(
+                LOCAL_SSN,
+                new SccpResponseListener()
+        );
 
         System.out.println("SCCP client configured");
     }
@@ -105,6 +112,9 @@ public class SccpClient {
     }
 
     public void stop() {
+        sccpStack.getSccpProvider()
+                .deregisterSccpListener(LOCAL_SSN);
+
         sccpStack.stop();
     }
 
