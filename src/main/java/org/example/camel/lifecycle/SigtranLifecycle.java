@@ -1,10 +1,7 @@
 
 package org.example.camel.lifecycle;
 
-import org.example.camel.generator.SccpClient;
-import org.example.camel.generator.SctpClient;
-import org.example.camel.generator.M3uaClient;
-import org.example.camel.generator.TcapClient;
+import org.example.camel.generator.*;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +12,7 @@ public class SigtranLifecycle implements SmartLifecycle {
     private M3uaClient m3uaClient;
     private SccpClient sccpClient;
     private TcapClient tcapClient;
+    private CapClient capClient;
 
     private volatile boolean running = false;
 
@@ -47,7 +45,12 @@ public class SigtranLifecycle implements SmartLifecycle {
             tcapClient = new TcapClient(
                     sccpClient.getStack().getSccpProvider()
             );
-            tcapClient.start();
+
+            capClient = new CapClient(
+                    tcapClient.getStack().getProvider()
+            );
+
+            capClient.start();
 
             // 5. Запускаем M3UA ASP
             m3uaClient.startAsp();
@@ -70,14 +73,14 @@ public class SigtranLifecycle implements SmartLifecycle {
         running = false;
 
         // Останавливаем компоненты в обратном порядке
-
         try {
-            if (tcapClient != null) {
-                tcapClient.stop();
+            if (capClient != null) {
+                capClient.stop();
             }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
+            capClient = null;
             tcapClient = null;
         }
 
