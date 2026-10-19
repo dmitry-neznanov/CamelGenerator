@@ -41,26 +41,28 @@ public class SctpClient {
             );
         }
 
+
         Association association =
                 sctpManagement.getAssociation(ASSOCIATION_NAME);
 
-        // Listener регистрируем при каждом запуске
-        association.setAssociationListener(new SctpAssociationListener());
+        System.out.println("Association type: " + association.getIpChannelType());
+        System.out.println("Association host: " + association.getHostAddress());
+        System.out.println("Association host port: " + association.getHostPort());
+        System.out.println("Association peer: " + association.getPeerAddress());
+        System.out.println("Association peer port: " + association.getPeerPort());
 
-        // Запускаем association, если она ещё не запущена
-        if (!association.isStarted()) {
 
-            sctpManagement.startAssociation(ASSOCIATION_NAME);
-
-            System.out.println("SCTP association started");
-
-        } else {
-
-            System.out.println("SCTP association already started");
-        }
     }
 
     public void stop() throws Exception {
         sctpManagement.stop();
+    }
+
+    public ManagementImpl getManagement() {
+        return sctpManagement;
+    }
+
+    public String getAssociationName() {
+        return ASSOCIATION_NAME;
     }
 }
