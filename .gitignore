@@ -36,3 +36,8 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+# RestComm generated configuration
+*_sctp.xml
+*_m3ua*.xml
+*_sccp*.xml
