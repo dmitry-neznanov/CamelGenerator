@@ -1,5 +1,6 @@
 package org.example.camel.lifecycle;
 
+import org.example.camel.generator.SccpClient;
 import org.example.camel.generator.SctpClient;
 import org.example.camel.generator.M3uaClient;
 import org.springframework.context.SmartLifecycle;
@@ -10,6 +11,8 @@ public class SigtranLifecycle implements SmartLifecycle {
 
     private SctpClient sctpClient;
     private M3uaClient m3uaClient;
+    private SccpClient sccpClient;
+
 
     private volatile boolean running = false;
 
@@ -32,6 +35,10 @@ public class SigtranLifecycle implements SmartLifecycle {
             );
 
             m3uaClient.start();
+
+            sccpClient = new SccpClient(m3uaClient.getManagement());
+            sccpClient.start();
+
             m3uaClient.startAsp();
 
             running = true;
@@ -50,6 +57,14 @@ public class SigtranLifecycle implements SmartLifecycle {
     public synchronized void stop() {
 
         running = false;
+
+        try {
+            if (sccpClient != null) {
+                sccpClient.stop();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         try {
             if (m3uaClient != null) {
