@@ -16,7 +16,6 @@ public class TcapController {
     @PostMapping("/api/tcap/send")
     public String send() throws Exception {
 
-        sigtranLifecycle.getTcapClient().sendBegin();
 
         return "TCAP BEGIN sent";
     }
