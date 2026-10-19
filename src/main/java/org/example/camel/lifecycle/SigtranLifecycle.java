@@ -92,4 +92,8 @@ public class SigtranLifecycle implements SmartLifecycle {
     public int getPhase() {
         return 0;
     }
+
+    public SccpClient getSccpClient() {
+        return sccpClient;
+    }
 }
