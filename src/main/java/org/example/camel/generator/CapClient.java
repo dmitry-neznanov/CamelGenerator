@@ -8,7 +8,6 @@ import org.restcomm.protocols.ss7.sccp.SccpProvider;
 import org.restcomm.protocols.ss7.tcap.api.TCAPProvider;
 
 import org.restcomm.protocols.ss7.indicator.RoutingIndicator;
-import org.restcomm.protocols.ss7.sccp.SccpProvider;
 import org.restcomm.protocols.ss7.sccp.parameter.SccpAddress;
 import org.restcomm.protocols.ss7.cap.api.CAPApplicationContext;
 import org.restcomm.protocols.ss7.cap.api.service.circuitSwitchedCall.CAPDialogCircuitSwitchedCall;

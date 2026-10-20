@@ -27,7 +27,6 @@ public class SctpClient {
 
         sctpManagement.start();
 
-        // Создаём association, если она отсутствует
         if (sctpManagement.getAssociation(ASSOCIATION_NAME) == null) {
 
             sctpManagement.addAssociation(

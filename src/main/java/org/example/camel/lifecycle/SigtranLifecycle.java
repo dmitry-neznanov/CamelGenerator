@@ -24,24 +24,20 @@ public class SigtranLifecycle implements SmartLifecycle {
         }
 
         try {
-            // 1. SCTP
             sctpClient = new SctpClient();
             sctpClient.start();
 
-            // 2. M3UA
             m3uaClient = new M3uaClient(
                     sctpClient.getManagement(),
                     sctpClient.getAssociationName()
             );
             m3uaClient.start();
 
-            // 3. SCCP
             sccpClient = new SccpClient(
                     m3uaClient.getManagement()
             );
             sccpClient.start();
 
-            // 4. TCAP
             tcapClient = new TcapClient(
                     sccpClient.getStack().getSccpProvider()
             );
@@ -53,7 +49,6 @@ public class SigtranLifecycle implements SmartLifecycle {
 
             capClient.start();
 
-            // 5. Запускаем M3UA ASP
             m3uaClient.startAsp();
 
             running = true;
@@ -73,7 +68,6 @@ public class SigtranLifecycle implements SmartLifecycle {
 
         running = false;
 
-        // Останавливаем компоненты в обратном порядке
         try {
             if (capClient != null) {
                 capClient.stop();

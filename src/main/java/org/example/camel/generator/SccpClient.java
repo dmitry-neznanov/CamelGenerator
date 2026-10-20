@@ -249,44 +249,4 @@ public class SccpClient {
         System.out.println("Remote SSN configuration updated");
     }
 
-    public void sendTestMessage() throws Exception {
-
-        var provider = sccpStack.getSccpProvider();
-
-        var parameterFactory = provider.getParameterFactory();
-        var messageFactory = provider.getMessageFactory();
-
-        // Адрес заглушки
-        var calledParty = parameterFactory.createSccpAddress(
-                RoutingIndicator.ROUTING_BASED_ON_DPC_AND_SSN,
-                null,
-                REMOTE_PC,
-                8
-        );
-
-        // Адрес генератора
-        var callingParty = parameterFactory.createSccpAddress(
-                RoutingIndicator.ROUTING_BASED_ON_DPC_AND_SSN,
-                null,
-                LOCAL_PC,
-                8
-        );
-
-        byte[] payload =
-                "Hello from CamelGenerator".getBytes(StandardCharsets.UTF_8);
-
-        var message = messageFactory.createDataMessageClass0(
-                calledParty,
-                callingParty,
-                payload,
-                0,
-                false,
-                null,
-                null
-        );
-
-        provider.send(message);
-
-        System.out.println("SCCP test message sent");
-    }
 }
