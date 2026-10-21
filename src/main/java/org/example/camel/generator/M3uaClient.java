@@ -101,10 +101,14 @@ public class M3uaClient {
         System.out.println("=== M3UA ROUTES ===");
 
         m3uaManagement.getRoute().forEach((key, route) -> {
+
             System.out.println("Route key: " + key);
 
             for (As as : route.getAsArray()) {
-                System.out.println("  AS: " + as.getName());
+
+                if (as != null) {
+                    System.out.println("  AS: " + as.getName());
+                }
             }
         });
 
