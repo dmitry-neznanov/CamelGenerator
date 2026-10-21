@@ -61,6 +61,9 @@ public class SctpClient {
                 "Remote: " + association.getPeerAddress()
                         + ":" + association.getPeerPort()
         );
+        System.out.println(
+                "SCTP association started: " + association.isStarted()
+        );
     }
 
     private void validateAssociation(Association association) {

@@ -35,6 +35,7 @@ public class M3uaClient {
 
     private final M3UAManagementImpl m3uaManagement;
     private final String associationName;
+    private final ManagementImpl sctpManagement;
 
     public M3uaClient(
             ManagementImpl sctpManagement,
@@ -47,6 +48,7 @@ public class M3uaClient {
         this.aspName = config.stackName() + "ASP";
 
         this.associationName = associationName;
+        this.sctpManagement = sctpManagement;
 
         m3uaManagement = new M3UAManagementImpl(
                 config.stackName() + "M3ua",
@@ -57,62 +59,23 @@ public class M3uaClient {
         m3uaManagement.setTransportManagement(sctpManagement);
     }
 
+
     public void start() throws Exception {
+
+        System.out.println(
+                "Before M3UA start, SCTP started: "
+                        + sctpManagement.getAssociation(associationName).isStarted()
+        );
 
         m3uaManagement.start();
 
-        ParameterFactory factory = new ParameterFactoryImpl();
+        System.out.println(
+                "After M3UA start, SCTP started: "
+                        + sctpManagement.getAssociation(associationName).isStarted()
+        );
 
-        RoutingContext routingContext =
-                factory.createRoutingContext(
-                        new long[]{config.routingContext()}
-                );
-
-        TrafficModeType trafficMode =
-                factory.createTrafficModeType(TRAFFIC_MODE);
-
-        boolean asExists = false;
-
-        for (var as : m3uaManagement.getAppServers()) {
-            if (asName.equals(as.getName())) {
-                asExists = true;
-                break;
-            }
-        }
-
-        if (!asExists) {
-            m3uaManagement.createAs(
-                    asName,
-                    FUNCTIONALITY,
-                    EXCHANGE_TYPE,
-                    null,
-                    routingContext,
-                    trafficMode,
-                    MIN_ASP_ACTIVE,
-                    null
-            );
-        }
-
-        boolean aspExists = false;
-
-        for (var asp : m3uaManagement.getAspfactories()) {
-            if (aspName.equals(asp.getName())) {
-                aspExists = true;
-                break;
-            }
-        }
-
-        if (!aspExists) {
-            m3uaManagement.createAspFactory(
-                    aspName,
-                    associationName
-            );
-
-            m3uaManagement.assignAspToAs(
-                    asName,
-                    aspName
-            );
-        }
+        configureAs();
+        configureAsp();
 
         if (m3uaManagement.getRoute().isEmpty()) {
             m3uaManagement.addRoute(
@@ -126,7 +89,6 @@ public class M3uaClient {
         System.out.println("=== M3UA ROUTES ===");
 
         m3uaManagement.getRoute().forEach((key, route) -> {
-
             System.out.println("Route key: " + key);
 
             for (As as : route.getAsArray()) {
@@ -136,6 +98,7 @@ public class M3uaClient {
 
         System.out.println("M3UA client configured");
     }
+
 
     public void startAsp() throws Exception {
 
@@ -221,6 +184,84 @@ public class M3uaClient {
 
         System.out.println("M3UA AS configuration matches: " + asName);
     }
+
+
+    private void configureAsp() throws Exception {
+
+        AspFactory existingFactory = m3uaManagement.getAspfactories()
+                .stream()
+                .filter(asp -> aspName.equals(asp.getName()))
+                .findFirst()
+                .orElse(null);
+
+        if (existingFactory == null) {
+
+            var association = sctpManagement.getAssociation(associationName);
+
+            if (association.isStarted()) {
+                throw new IllegalStateException(
+                        "Cannot create ASP Factory because SCTP association "
+                                + associationName + " is already started"
+                );
+            }
+
+            m3uaManagement.createAspFactory(
+                    aspName,
+                    associationName
+            );
+
+            System.out.println("M3UA ASP Factory created: " + aspName);
+
+        } else {
+
+            if (existingFactory.getAssociation() == null) {
+                throw new IllegalStateException(
+                        "ASP Factory has no SCTP association: " + aspName
+                );
+            }
+
+            String actualAssociation =
+                    existingFactory.getAssociation().getName();
+
+            if (!associationName.equals(actualAssociation)) {
+                throw new IllegalStateException(
+                        "ASP association mismatch. Expected: "
+                                + associationName
+                                + ", actual: "
+                                + actualAssociation
+                );
+            }
+        }
+
+        As targetAs = m3uaManagement.getAppServers()
+                .stream()
+                .filter(as -> asName.equals(as.getName()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "M3UA AS not found: " + asName
+                ));
+
+        boolean assigned = targetAs.getAspList()
+                .stream()
+                .anyMatch(asp ->
+                        asp.getAspFactory() != null
+                                && aspName.equals(asp.getAspFactory().getName())
+                );
+
+        if (!assigned) {
+            m3uaManagement.assignAspToAs(asName, aspName);
+
+            System.out.println(
+                    "M3UA ASP assigned to AS: "
+                            + aspName + " -> " + asName
+            );
+        } else {
+            System.out.println(
+                    "M3UA ASP already assigned to AS"
+            );
+        }
+    }
+
 
 }
 
