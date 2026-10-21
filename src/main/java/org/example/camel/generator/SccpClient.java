@@ -4,6 +4,7 @@ package org.example.camel.generator;
 import org.restcomm.protocols.ss7.m3ua.impl.M3UAManagementImpl;
 import org.restcomm.protocols.ss7.sccp.impl.SccpStackImpl;
 import org.restcomm.protocols.ss7.sccp.Mtp3ServiceAccessPoint;
+import org.example.camel.config.SigtranConfig;
 
 import org.restcomm.protocols.ss7.indicator.RoutingIndicator;
 
@@ -13,16 +14,16 @@ import java.util.Objects;
 
 public class SccpClient {
 
-    private static final String STACK_NAME = "CamelGeneratorSccp";
+
 
     private static final int SAP_ID = 1;
     private static final int MTP3_ID = 1;
-    private static final int LOCAL_PC = 1;
+
     private static final int NETWORK_INDICATOR = 2;
     private static final int NETWORK_ID = 0;
 
     private static final int DESTINATION_ID = 1;
-    private static final int REMOTE_PC = 2;
+
 
     private static final int FIRST_SLS = 0;
     private static final int LAST_SLS = 255;
@@ -30,16 +31,29 @@ public class SccpClient {
 
     private static final int REMOTE_SPC_ID = 1;
     private static final int REMOTE_SSN_ID = 1;
-    private static final int REMOTE_SSN = 8;
+
 
     private static final String LOCAL_GT_DIGITS = "";
 
     private final SccpStackImpl sccpStack;
+    private final SigtranConfig config;
 
 
-    public SccpClient(M3UAManagementImpl m3uaManagement) {
-        sccpStack = new SccpStackImpl(STACK_NAME, null);
-        sccpStack.setMtp3UserPart(MTP3_ID, m3uaManagement);
+    public SccpClient(
+            M3UAManagementImpl m3uaManagement,
+            SigtranConfig config
+    ) {
+        this.config = Objects.requireNonNull(config);
+
+        sccpStack = new SccpStackImpl(
+                config.stackName() + "Sccp",
+                null
+        );
+
+        sccpStack.setMtp3UserPart(
+                MTP3_ID,
+                m3uaManagement
+        );
     }
 
     public void start() throws Exception {
@@ -68,7 +82,7 @@ public class SccpClient {
             router.addMtp3ServiceAccessPoint(
                     SAP_ID,
                     MTP3_ID,
-                    LOCAL_PC,
+                    config.localPointCode(),
                     NETWORK_INDICATOR,
                     NETWORK_ID,
                     LOCAL_GT_DIGITS
@@ -80,7 +94,7 @@ public class SccpClient {
 
         boolean configurationMatches =
                 sap.getMtp3Id() == MTP3_ID
-                        && sap.getOpc() == LOCAL_PC
+                        && sap.getOpc() == config.localPointCode()
                         && sap.getNi() == NETWORK_INDICATOR
                         && sap.getNetworkId() == NETWORK_ID
                         && Objects.equals(
@@ -96,7 +110,7 @@ public class SccpClient {
         router.modifyMtp3ServiceAccessPoint(
                 SAP_ID,
                 MTP3_ID,
-                LOCAL_PC,
+                config.localPointCode(),
                 NETWORK_INDICATOR,
                 NETWORK_ID,
                 LOCAL_GT_DIGITS
@@ -132,8 +146,8 @@ public class SccpClient {
             router.addMtp3Destination(
                     SAP_ID,
                     DESTINATION_ID,
-                    REMOTE_PC,
-                    REMOTE_PC,
+                    config.remotePointCode(),
+                    config.remotePointCode(),
                     FIRST_SLS,
                     LAST_SLS,
                     SLS_MASK
@@ -144,8 +158,8 @@ public class SccpClient {
         }
 
         boolean configurationMatches =
-                destination.getFirstDpc() == REMOTE_PC
-                        && destination.getLastDpc() == REMOTE_PC
+                destination.getFirstDpc() == config.remotePointCode()
+                        && destination.getLastDpc() == config.remotePointCode()
                         && destination.getFirstSls() == FIRST_SLS
                         && destination.getLastSls() == LAST_SLS
                         && destination.getSlsMask() == SLS_MASK;
@@ -158,8 +172,8 @@ public class SccpClient {
         router.modifyMtp3Destination(
                 SAP_ID,
                 DESTINATION_ID,
-                REMOTE_PC,
-                REMOTE_PC,
+                config.remotePointCode(),
+                config.remotePointCode(),
                 FIRST_SLS,
                 LAST_SLS,
                 SLS_MASK
@@ -178,7 +192,7 @@ public class SccpClient {
 
             resource.addRemoteSpc(
                     REMOTE_SPC_ID,
-                    REMOTE_PC,
+                    config.remotePointCode(),
                     0,
                     0
             );
@@ -188,7 +202,7 @@ public class SccpClient {
         }
 
         boolean configurationMatches =
-                remoteSpc.getRemoteSpc() == REMOTE_PC
+                remoteSpc.getRemoteSpc() == config.remotePointCode()
                         && remoteSpc.getRemoteSpcFlag() == 0
                         && remoteSpc.getMask() == 0;
 
@@ -199,7 +213,7 @@ public class SccpClient {
 
         resource.modifyRemoteSpc(
                 REMOTE_SPC_ID,
-                REMOTE_PC,
+                config.remotePointCode(),
                 0,
                 0
         );
@@ -217,8 +231,8 @@ public class SccpClient {
 
             resource.addRemoteSsn(
                     REMOTE_SSN_ID,
-                    REMOTE_PC,
-                    REMOTE_SSN,
+                    config.remotePointCode(),
+                    config.remoteSsn(),
                     0,
                     false
             );
@@ -228,8 +242,8 @@ public class SccpClient {
         }
 
         boolean configurationMatches =
-                remoteSsn.getRemoteSpc() == REMOTE_PC
-                        && remoteSsn.getRemoteSsn() == REMOTE_SSN
+                remoteSsn.getRemoteSpc() == config.remotePointCode()
+                        && remoteSsn.getRemoteSsn() == config.remoteSsn()
                         && remoteSsn.getRemoteSsnFlag() == 0
                         && !remoteSsn.getMarkProhibitedWhenSpcResuming();
 
@@ -240,8 +254,8 @@ public class SccpClient {
 
         resource.modifyRemoteSsn(
                 REMOTE_SSN_ID,
-                REMOTE_PC,
-                REMOTE_SSN,
+                config.remotePointCode(),
+                config.remoteSsn(),
                 0,
                 false
         );

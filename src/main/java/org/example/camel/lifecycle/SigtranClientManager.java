@@ -1,12 +1,14 @@
 
 package org.example.camel.lifecycle;
 
+import org.example.camel.config.SigtranConfig;
 import org.example.camel.generator.*;
-import org.springframework.context.SmartLifecycle;
-import org.springframework.stereotype.Component;
 
-@Component
-public class SigtranLifecycle implements SmartLifecycle {
+import java.util.Objects;
+
+public class SigtranClientManager implements AutoCloseable {
+
+    private final SigtranConfig config;
 
     private SctpClient sctpClient;
     private M3uaClient m3uaClient;
@@ -16,7 +18,10 @@ public class SigtranLifecycle implements SmartLifecycle {
 
     private volatile boolean running = false;
 
-    @Override
+    public SigtranClientManager(SigtranConfig config) {
+        this.config = Objects.requireNonNull(config);
+    }
+
     public synchronized void start() {
 
         if (running) {
@@ -24,17 +29,19 @@ public class SigtranLifecycle implements SmartLifecycle {
         }
 
         try {
-            sctpClient = new SctpClient();
+            sctpClient = new SctpClient(config);
             sctpClient.start();
 
             m3uaClient = new M3uaClient(
                     sctpClient.getManagement(),
-                    sctpClient.getAssociationName()
+                    sctpClient.getAssociationName(),
+                    config
             );
             m3uaClient.start();
 
             sccpClient = new SccpClient(
-                    m3uaClient.getManagement()
+                    m3uaClient.getManagement(),
+                    config
             );
             sccpClient.start();
 
@@ -44,7 +51,8 @@ public class SigtranLifecycle implements SmartLifecycle {
 
             capClient = new CapClient(
                     tcapClient.getStack().getProvider(),
-                    sccpClient.getStack().getSccpProvider()
+                    sccpClient.getStack().getSccpProvider(),
+                    config
             );
 
             capClient.start();
@@ -53,17 +61,19 @@ public class SigtranLifecycle implements SmartLifecycle {
 
             running = true;
 
-            System.out.println("CamelGenerator SIGTRAN stack started");
+            System.out.println(
+                    "SIGTRAN client started: " + config.stackName()
+            );
 
         } catch (Exception e) {
             stop();
+
             throw new IllegalStateException(
-                    "Failed to start SIGTRAN stack", e
+                    "Failed to start SIGTRAN client", e
             );
         }
     }
 
-    @Override
     public synchronized void stop() {
 
         running = false;
@@ -110,25 +120,22 @@ public class SigtranLifecycle implements SmartLifecycle {
         }
     }
 
-    @Override
     public boolean isRunning() {
         return running;
     }
 
-    @Override
-    public int getPhase() {
-        return 0;
-    }
-
-    public SccpClient getSccpClient() {
-        return sccpClient;
-    }
-
-    public TcapClient getTcapClient() {
-        return tcapClient;
-    }
-
     public CapClient getCapClient() {
+        if (!running) {
+            throw new IllegalStateException(
+                    "SIGTRAN client is not running"
+            );
+        }
+
         return capClient;
+    }
+
+    @Override
+    public void close() {
+        stop();
     }
 }

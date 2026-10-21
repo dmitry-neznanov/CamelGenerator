@@ -11,6 +11,9 @@ import org.restcomm.protocols.ss7.indicator.RoutingIndicator;
 import org.restcomm.protocols.ss7.sccp.parameter.SccpAddress;
 import org.restcomm.protocols.ss7.cap.api.CAPApplicationContext;
 import org.restcomm.protocols.ss7.cap.api.service.circuitSwitchedCall.CAPDialogCircuitSwitchedCall;
+import org.example.camel.config.SigtranConfig;
+
+import java.util.Objects;
 
 public class CapClient {
 
@@ -20,15 +23,18 @@ public class CapClient {
     private final CapClientListener listener;
 
     private final SccpProvider sccpProvider;
+    private final SigtranConfig config;
 
     public CapClient(
             TCAPProvider tcapProvider,
-            SccpProvider sccpProvider
+            SccpProvider sccpProvider,
+            SigtranConfig config
     ) {
+        this.config = Objects.requireNonNull(config);
         this.sccpProvider = sccpProvider;
 
         this.capStack = new CAPStackImpl(
-                STACK_NAME,
+                config.stackName() + "Cap",
                 tcapProvider
         );
 
@@ -63,7 +69,7 @@ public class CapClient {
         return capStack.getCAPProvider();
     }
 
-    public long sendInitialDP() throws Exception {
+    public long sendInitialDP(int serviceKey) throws Exception {
 
         CAPProvider provider = capStack.getCAPProvider();
 
@@ -71,16 +77,16 @@ public class CapClient {
                 sccpProvider.getParameterFactory().createSccpAddress(
                         RoutingIndicator.ROUTING_BASED_ON_DPC_AND_SSN,
                         null,
-                        1,
-                        8
+                        config.localPointCode(),
+                        config.localSsn()
                 );
 
         SccpAddress remoteAddress =
                 sccpProvider.getParameterFactory().createSccpAddress(
                         RoutingIndicator.ROUTING_BASED_ON_DPC_AND_SSN,
                         null,
-                        2,
-                        8
+                        config.remotePointCode(),
+                        config.remoteSsn()
                 );
 
         CAPDialogCircuitSwitchedCall dialog =
@@ -92,7 +98,7 @@ public class CapClient {
                         );
 
         dialog.addInitialDPRequest(
-                1,       // serviceKey
+                serviceKey,       // serviceKey
                 null,    // calledPartyNumber
                 null,    // callingPartyNumber
                 null,    // callingPartysCategory

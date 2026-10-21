@@ -1,56 +1,91 @@
+
 package org.example.camel.generator;
 
+import org.example.camel.config.SigtranConfig;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.sctp.ManagementImpl;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class SctpClient {
 
-    private static final String LOCAL_IP = "127.0.0.1";
-    private static final int LOCAL_PORT = 2906;
-
-    private static final String REMOTE_IP = "127.0.0.1";
-    private static final int REMOTE_PORT = 2905;
-
-    private static final String ASSOCIATION_NAME = "generatorAssociation";
-    private static final String MANAGEMENT_NAME = "CamelGeneratorSctp";
-
+    private final SigtranConfig config;
     private final ManagementImpl sctpManagement;
 
-    public SctpClient() throws IOException {
-        sctpManagement = new ManagementImpl(MANAGEMENT_NAME);
+    public SctpClient(SigtranConfig config) throws IOException {
+        this.config = Objects.requireNonNull(config);
+        this.sctpManagement = new ManagementImpl(
+                config.stackName() + "Sctp"
+        );
     }
 
     public void start() throws Exception {
 
         sctpManagement.start();
 
-        if (sctpManagement.getAssociation(ASSOCIATION_NAME) == null) {
+        Association association = sctpManagement.getAssociation(
+                config.associationName()
+        );
+
+        if (association == null) {
 
             sctpManagement.addAssociation(
-                    LOCAL_IP,
-                    LOCAL_PORT,
-                    REMOTE_IP,
-                    REMOTE_PORT,
-                    ASSOCIATION_NAME,
+                    config.localIp(),
+                    config.localPort(),
+                    config.remoteIp(),
+                    config.remotePort(),
+                    config.associationName(),
                     IpChannelType.SCTP,
                     null
             );
+
+        } else {
+
+            validateAssociation(association);
         }
 
+        association = sctpManagement.getAssociation(
+                config.associationName()
+        );
 
-        Association association =
-                sctpManagement.getAssociation(ASSOCIATION_NAME);
+        System.out.println(
+                "SCTP association: " + config.associationName()
+        );
+        System.out.println(
+                "Local: " + association.getHostAddress()
+                        + ":" + association.getHostPort()
+        );
+        System.out.println(
+                "Remote: " + association.getPeerAddress()
+                        + ":" + association.getPeerPort()
+        );
+    }
 
-        System.out.println("Association type: " + association.getIpChannelType());
-        System.out.println("Association host: " + association.getHostAddress());
-        System.out.println("Association host port: " + association.getHostPort());
-        System.out.println("Association peer: " + association.getPeerAddress());
-        System.out.println("Association peer port: " + association.getPeerPort());
+    private void validateAssociation(Association association) {
 
+        boolean matches =
+                Objects.equals(
+                        association.getHostAddress(),
+                        config.localIp()
+                )
+                        && association.getHostPort() == config.localPort()
+                        && Objects.equals(
+                        association.getPeerAddress(),
+                        config.remoteIp()
+                )
+                        && association.getPeerPort() == config.remotePort()
+                        && association.getIpChannelType() == IpChannelType.SCTP;
 
+        if (!matches) {
+            throw new IllegalStateException(
+                    "Existing SCTP association does not match "
+                            + "the supplied configuration: "
+                            + config.associationName()
+                            + ". Check persisted jSS7 configuration."
+            );
+        }
     }
 
     public void stop() throws Exception {
@@ -62,6 +97,6 @@ public class SctpClient {
     }
 
     public String getAssociationName() {
-        return ASSOCIATION_NAME;
+        return config.associationName();
     }
 }
