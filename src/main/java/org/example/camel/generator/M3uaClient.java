@@ -12,7 +12,6 @@ import org.restcomm.protocols.ss7.m3ua.parameter.TrafficModeType;
 import org.example.camel.config.SigtranConfig;
 import java.util.Objects;
 import java.util.Arrays;
-import java.util.Objects;
 
 import org.restcomm.protocols.ss7.m3ua.As;
 import org.restcomm.protocols.ss7.m3ua.Asp;
@@ -151,11 +150,14 @@ public class M3uaClient {
         TrafficModeType trafficMode =
                 factory.createTrafficModeType(TRAFFIC_MODE);
 
-        As existingAs = m3uaManagement.getAppServers()
-                .stream()
-                .filter(as -> asName.equals(as.getName()))
-                .findFirst()
-                .orElse(null);
+        As existingAs = null;
+
+        for (As as : m3uaManagement.getAppServers()) {
+            if (asName.equals(as.getName())) {
+                existingAs = as;
+                break;
+            }
+        }
 
         if (existingAs == null) {
 
@@ -201,11 +203,14 @@ public class M3uaClient {
 
     private void configureAsp() throws Exception {
 
-        AspFactory existingFactory = m3uaManagement.getAspfactories()
-                .stream()
-                .filter(asp -> aspName.equals(asp.getName()))
-                .findFirst()
-                .orElse(null);
+        AspFactory existingFactory = null;
+
+        for (AspFactory asp : m3uaManagement.getAspfactories()) {
+            if (aspName.equals(asp.getName())) {
+                existingFactory = asp;
+                break;
+            }
+        }
 
         if (existingFactory == null) {
 
@@ -246,20 +251,32 @@ public class M3uaClient {
             }
         }
 
-        As targetAs = m3uaManagement.getAppServers()
-                .stream()
-                .filter(as -> asName.equals(as.getName()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        "M3UA AS not found: " + asName
-                ));
+        As targetAs = null;
 
-        boolean assigned = targetAs.getAspList()
-                .stream()
-                .anyMatch(asp ->
-                        asp.getAspFactory() != null
-                                && aspName.equals(asp.getAspFactory().getName())
-                );
+        for (As as : m3uaManagement.getAppServers()) {
+            if (asName.equals(as.getName())) {
+                targetAs = as;
+                break;
+            }
+        }
+
+        if (targetAs == null) {
+            throw new IllegalStateException(
+                    "M3UA AS not found: " + asName
+            );
+        }
+
+        boolean assigned = false;
+
+        for (Asp asp : targetAs.getAspList()) {
+
+            if (asp.getAspFactory() != null
+                    && aspName.equals(asp.getAspFactory().getName())) {
+
+                assigned = true;
+                break;
+            }
+        }
 
         if (!assigned) {
             m3uaManagement.assignAspToAs(asName, aspName);
