@@ -74,6 +74,19 @@ public class M3uaClient {
                         + sctpManagement.getAssociation(associationName).isStarted()
         );
 
+        System.out.println("=== EXISTING ASP FACTORIES ===");
+
+        m3uaManagement.getAspfactories().forEach(asp -> {
+            System.out.println(
+                    "ASP Factory: " + asp.getName()
+                            + ", started: " + asp.getStatus()
+                            + ", association: "
+                            + (asp.getAssociation() == null
+                            ? "null"
+                            : asp.getAssociation().getName())
+            );
+        });
+
         configureAs();
         configureAsp();
 
