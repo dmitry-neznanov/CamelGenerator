@@ -22,6 +22,13 @@ public class GeneratorMain {
             // Ожидаем готовность M3UA
             manager.awaitReady(15, TimeUnit.SECONDS);
 
+            System.out.println("ASP is ACTIVE");
+
+            // Только для диагностики
+            Thread.sleep(1000);
+
+            System.out.println("Sending InitialDP...");
+
             System.out.println("SIGTRAN stack is READY");
 
             CapRequest request =
