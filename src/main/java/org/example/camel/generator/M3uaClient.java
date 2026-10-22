@@ -319,11 +319,11 @@ public class M3uaClient {
     }
 
 
+
     public void awaitReady(long timeout, TimeUnit unit)
             throws InterruptedException, TimeoutException {
 
-        long timeoutNanos = unit.toNanos(timeout);
-        long deadline = System.nanoTime() + timeoutNanos;
+        long deadline = System.nanoTime() + unit.toNanos(timeout);
 
         while (true) {
 
@@ -333,14 +333,22 @@ public class M3uaClient {
                     continue;
                 }
 
+                if (!as.isUp()) {
+                    break;
+                }
+
                 for (Asp asp : as.getAspList()) {
 
-                    if (asp.isConnected()
+                    if (aspName.equals(asp.getName())
+                            && asp.isConnected()
                             && asp.isUp()
                             && "ACTIVE".equals(asp.getState().toString())) {
 
                         System.out.println(
-                                "M3UA ASP is ACTIVE: " + asp.getName()
+                                "M3UA READY: AS=" + as.getName()
+                                        + ", AS state=" + as.getState()
+                                        + ", ASP=" + asp.getName()
+                                        + ", ASP state=" + asp.getState()
                         );
 
                         return;
@@ -350,14 +358,22 @@ public class M3uaClient {
 
             if (System.nanoTime() >= deadline) {
                 throw new TimeoutException(
-                        "M3UA ASP did not become ACTIVE within "
+                        "M3UA AS/ASP did not become ACTIVE within "
                                 + timeout + " " + unit
                 );
             }
 
-            Thread.sleep(100);
+            long remainingNanos = deadline - System.nanoTime();
+
+            TimeUnit.NANOSECONDS.sleep(
+                    Math.min(
+                            TimeUnit.MILLISECONDS.toNanos(100),
+                            Math.max(1, remainingNanos)
+                    )
+            );
         }
     }
+
 
 
 

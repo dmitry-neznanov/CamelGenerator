@@ -134,11 +134,6 @@ public class CapClient {
                 null     // initialDPArgExtension
         );
 
-        System.out.println(
-                "CAP InitialDP sent. Dialog ID=" +
-                        dialog.getLocalDialogId()
-        );
-
         long dialogId = dialog.getLocalDialogId();
 
 // Регистрируем запрос до отправки
