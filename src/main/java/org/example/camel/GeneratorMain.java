@@ -5,8 +5,9 @@ import org.example.camel.config.SigtranConfig;
 import org.example.camel.generator.CapRequest;
 import org.example.camel.lifecycle.SigtranClientManager;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
 
 public class GeneratorMain {
 
@@ -18,38 +19,77 @@ public class GeneratorMain {
                      new SigtranClientManager(config)) {
 
             manager.start();
-
-            // Ожидаем готовность M3UA
             manager.awaitReady(15, TimeUnit.SECONDS);
 
             System.out.println("SIGTRAN stack is READY");
 
-            CapRequest request =
-                    manager.getCapClient().sendInitialDP(10);
+            int requestsCount = 10;
 
-            System.out.println(
-                    "Waiting for Continue. Dialog ID="
-                            + request.dialogId()
-            );
+            ExecutorService executor =
+                    Executors.newFixedThreadPool(requestsCount);
 
             try {
+                List<Future<Boolean>> results = new ArrayList<>();
 
-                request.response().get(5, TimeUnit.SECONDS);
+                for (int i = 0; i < requestsCount; i++) {
 
-                System.out.println(
-                        "SUCCESS: InitialDP -> Continue. Dialog ID="
-                                + request.dialogId()
-                );
+                    results.add(executor.submit(() -> {
 
-            } catch (TimeoutException e) {
+                        CapRequest request = null;
 
-                manager.getCapClient()
-                        .cancelRequest(request.dialogId());
+                        try {
+                            request = manager.getCapClient()
+                                    .sendInitialDP(10);
 
-                System.err.println(
-                        "TIMEOUT: Continue not received. Dialog ID="
-                                + request.dialogId()
-                );
+                            request.response()
+                                    .get(5, TimeUnit.SECONDS);
+
+                            System.out.println(
+                                    "SUCCESS: Dialog ID="
+                                            + request.dialogId()
+                            );
+
+                            return true;
+
+                        } catch (Exception e) {
+
+                            if (request != null) {
+                                manager.getCapClient()
+                                        .cancelRequest(request.dialogId());
+                            }
+
+                            System.err.println(
+                                    "FAILED: " + e.getMessage()
+                            );
+
+                            return false;
+                        }
+                    }));
+                }
+
+                int success = 0;
+                int failed = 0;
+
+                for (Future<Boolean> result : results) {
+
+                    if (result.get()) {
+                        success++;
+                    } else {
+                        failed++;
+                    }
+                }
+
+                System.out.println("=== TEST RESULTS ===");
+                System.out.println("Total: " + requestsCount);
+                System.out.println("Success: " + success);
+                System.out.println("Failed: " + failed);
+
+            } finally {
+                executor.shutdown();
+
+                if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                }
             }
 
             System.out.println("Press Enter to stop...");
