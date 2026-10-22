@@ -19,6 +19,8 @@ public class GeneratorMain {
 
             manager.start();
 
+            Thread.sleep(3000);
+
             System.out.println("SIGTRAN stack started");
 
             int serviceKey = 10;
