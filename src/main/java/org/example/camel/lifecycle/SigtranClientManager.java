@@ -138,4 +138,8 @@ public class SigtranClientManager implements AutoCloseable {
     public void close() {
         stop();
     }
+
+    public void printM3uaState() {
+        m3uaClient.printAspState();
+    }
 }

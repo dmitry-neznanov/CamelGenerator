@@ -300,14 +300,12 @@ public class M3uaClient {
 
         for (As as : m3uaManagement.getAppServers()) {
 
-            if (!asName.equals(as.getName())) {
-                continue;
-            }
+            System.out.println("AS: " + as.getName());
 
             for (Asp asp : as.getAspList()) {
 
                 System.out.println(
-                        "M3UA ASP: " + asp.getName()
+                        "ASP: " + asp.getName()
                                 + ", started=" + asp.isStarted()
                                 + ", connected=" + asp.isConnected()
                                 + ", up=" + asp.isUp()
@@ -315,6 +313,7 @@ public class M3uaClient {
                 );
             }
         }
+
     }
 
 
