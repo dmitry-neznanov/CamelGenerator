@@ -23,38 +23,6 @@ public class GeneratorMain {
 
             manager.printM3uaState();
 
-            System.out.println("SIGTRAN stack started");
-
-            int serviceKey = 10;
-
-            CapRequest request =
-                    manager.getCapClient().sendInitialDP(serviceKey);
-
-            System.out.println(
-                    "Waiting for Continue. Dialog ID="
-                            + request.dialogId()
-            );
-
-            try {
-                request.response().get(5, TimeUnit.SECONDS);
-
-                System.out.println(
-                        "SUCCESS: InitialDP -> Continue. Dialog ID="
-                                + request.dialogId()
-                );
-
-            } catch (TimeoutException e) {
-
-                manager.getCapClient()
-                        .cancelRequest(request.dialogId());
-
-                System.err.println(
-                        "TIMEOUT: Continue not received. Dialog ID="
-                                + request.dialogId()
-                );
-
-            }
-
             System.out.println("Press Enter to stop...");
             System.in.read();
         }
