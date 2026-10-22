@@ -5,6 +5,8 @@ import org.example.camel.config.SigtranConfig;
 import org.example.camel.generator.*;
 
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class SigtranClientManager implements AutoCloseable {
 
@@ -141,5 +143,17 @@ public class SigtranClientManager implements AutoCloseable {
 
     public void printM3uaState() {
         m3uaClient.printAspState();
+    }
+
+    public void awaitReady(long timeout, TimeUnit unit)
+            throws InterruptedException, TimeoutException {
+
+        if (!running) {
+            throw new IllegalStateException(
+                    "SIGTRAN client is not running"
+            );
+        }
+
+        m3uaClient.awaitReady(timeout, unit);
     }
 }

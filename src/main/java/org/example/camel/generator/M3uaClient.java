@@ -12,6 +12,8 @@ import org.restcomm.protocols.ss7.m3ua.parameter.TrafficModeType;
 import org.example.camel.config.SigtranConfig;
 import java.util.Objects;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.restcomm.protocols.ss7.m3ua.As;
 import org.restcomm.protocols.ss7.m3ua.Asp;
@@ -315,6 +317,48 @@ public class M3uaClient {
         }
 
     }
+
+
+    public void awaitReady(long timeout, TimeUnit unit)
+            throws InterruptedException, TimeoutException {
+
+        long timeoutNanos = unit.toNanos(timeout);
+        long deadline = System.nanoTime() + timeoutNanos;
+
+        while (true) {
+
+            for (As as : m3uaManagement.getAppServers()) {
+
+                if (!asName.equals(as.getName())) {
+                    continue;
+                }
+
+                for (Asp asp : as.getAspList()) {
+
+                    if (asp.isConnected()
+                            && asp.isUp()
+                            && "ACTIVE".equals(asp.getState().toString())) {
+
+                        System.out.println(
+                                "M3UA ASP is ACTIVE: " + asp.getName()
+                        );
+
+                        return;
+                    }
+                }
+            }
+
+            if (System.nanoTime() >= deadline) {
+                throw new TimeoutException(
+                        "M3UA ASP did not become ACTIVE within "
+                                + timeout + " " + unit
+                );
+            }
+
+            Thread.sleep(100);
+        }
+    }
+
 
 
 }
