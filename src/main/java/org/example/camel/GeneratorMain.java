@@ -2,12 +2,9 @@
 package org.example.camel;
 
 import org.example.camel.config.SigtranConfig;
-import org.example.camel.generator.CapRequest;
-import org.example.camel.lifecycle.SigtranClientManager;
+import org.example.camel.registry.SigtranClientRegistry;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
 
 public class GeneratorMain {
 
@@ -15,85 +12,30 @@ public class GeneratorMain {
 
         SigtranConfig config = SigtranConfig.localStub();
 
-        try (SigtranClientManager manager =
-                     new SigtranClientManager(config)) {
+        try (
+                SigtranClientRegistry.Lease client1 =
+                        SigtranClientRegistry.acquire(config);
 
-            manager.start();
-            manager.awaitReady(15, TimeUnit.SECONDS);
+                SigtranClientRegistry.Lease client2 =
+                        SigtranClientRegistry.acquire(config)
+        ) {
 
-            System.out.println("SIGTRAN stack is READY");
+            System.out.println(
+                    "Same manager: "
+                            + (client1.getManager()
+                            == client2.getManager())
+            );
 
-            int requestsCount = 10;
+            var request = client1.getManager()
+                    .getCapClient()
+                    .sendInitialDP(10);
 
-            ExecutorService executor =
-                    Executors.newFixedThreadPool(requestsCount);
+            request.response().get(5, TimeUnit.SECONDS);
 
-            try {
-                List<Future<Boolean>> results = new ArrayList<>();
-
-                for (int i = 0; i < requestsCount; i++) {
-
-                    results.add(executor.submit(() -> {
-
-                        CapRequest request = null;
-
-                        try {
-                            request = manager.getCapClient()
-                                    .sendInitialDP(10);
-
-                            request.response()
-                                    .get(5, TimeUnit.SECONDS);
-
-                            System.out.println(
-                                    "SUCCESS: Dialog ID="
-                                            + request.dialogId()
-                            );
-
-                            return true;
-
-                        } catch (Exception e) {
-
-                            if (request != null) {
-                                manager.getCapClient()
-                                        .cancelRequest(request.dialogId());
-                            }
-
-                            System.err.println(
-                                    "FAILED: " + e.getMessage()
-                            );
-
-                            return false;
-                        }
-                    }));
-                }
-
-                int success = 0;
-                int failed = 0;
-
-                for (Future<Boolean> result : results) {
-
-                    if (result.get()) {
-                        success++;
-                    } else {
-                        failed++;
-                    }
-                }
-
-                System.out.println("=== TEST RESULTS ===");
-                System.out.println("Total: " + requestsCount);
-                System.out.println("Success: " + success);
-                System.out.println("Failed: " + failed);
-
-            } finally {
-                executor.shutdown();
-
-                if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
-                    executor.shutdownNow();
-                }
-            }
-
-            System.out.println("Press Enter to stop...");
-            System.in.read();
+            System.out.println(
+                    "SUCCESS: InitialDP -> Continue. Dialog ID="
+                            + request.dialogId()
+            );
         }
     }
 }
