@@ -14,6 +14,7 @@ import org.restcomm.protocols.ss7.cap.api.service.circuitSwitchedCall.CAPDialogC
 import org.example.camel.config.SigtranConfig;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 public class CapClient {
 
@@ -24,6 +25,8 @@ public class CapClient {
 
     private final SccpProvider sccpProvider;
     private final SigtranConfig config;
+    private final CapRequestTracker requestTracker =
+            new CapRequestTracker();
 
     public CapClient(
             TCAPProvider tcapProvider,
@@ -38,7 +41,7 @@ public class CapClient {
                 tcapProvider
         );
 
-        this.listener = new CapClientListener();
+        this.listener = new CapClientListener(requestTracker);
     }
 
     public void start() throws Exception {
@@ -69,7 +72,7 @@ public class CapClient {
         return capStack.getCAPProvider();
     }
 
-    public long sendInitialDP(int serviceKey) throws Exception {
+    public CapRequest sendInitialDP(int serviceKey) throws Exception {
 
         CAPProvider provider = capStack.getCAPProvider();
 
@@ -131,13 +134,35 @@ public class CapClient {
                 null     // initialDPArgExtension
         );
 
-        dialog.send();
-
         System.out.println(
                 "CAP InitialDP sent. Dialog ID=" +
                         dialog.getLocalDialogId()
         );
 
-        return dialog.getLocalDialogId();
+        long dialogId = dialog.getLocalDialogId();
+
+// Регистрируем запрос до отправки
+        CompletableFuture<Void> future =
+                requestTracker.register(dialogId);
+
+        try {
+            // Отправляем InitialDP только один раз
+            dialog.send();
+
+            System.out.println(
+                    "CAP InitialDP sent. Dialog ID=" + dialogId
+            );
+
+            return new CapRequest(dialogId, future);
+
+        } catch (Exception e) {
+            requestTracker.fail(dialogId, e);
+            throw e;
+        }
     }
+
+    public void cancelRequest(long dialogId) {
+        requestTracker.cancel(dialogId);
+    }
+
 }

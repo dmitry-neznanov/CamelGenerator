@@ -11,10 +11,19 @@ import org.restcomm.protocols.ss7.cap.api.errors.CAPErrorMessage;
 import org.restcomm.protocols.ss7.cap.api.service.circuitSwitchedCall.*;
 import org.restcomm.protocols.ss7.tcap.asn.comp.PAbortCauseType;
 import org.restcomm.protocols.ss7.tcap.asn.comp.Problem;
+import org.example.camel.generator.CapRequestTracker;
+import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 
 public class CapClientListener implements
         CAPServiceCircuitSwitchedCallListener,
         CAPDialogListener {
+
+    private final CapRequestTracker requestTracker;
+
+    public CapClientListener(CapRequestTracker requestTracker) {
+        this.requestTracker = Objects.requireNonNull(requestTracker);
+    }
 
     @Override
     public void onDialogDelimiter(CAPDialog capDialog) {
@@ -32,13 +41,34 @@ public class CapClientListener implements
     }
 
     @Override
-    public void onDialogUserAbort(CAPDialog capDialog, CAPGeneralAbortReason capGeneralAbortReason, CAPUserAbortReason capUserAbortReason) {
+    public void onDialogUserAbort(
+            CAPDialog dialog,
+            CAPGeneralAbortReason generalReason,
+            CAPUserAbortReason userReason) {
 
+        requestTracker.fail(
+                dialog.getLocalDialogId(),
+                new IllegalStateException(
+                        "CAP User Abort. Dialog ID="
+                                + dialog.getLocalDialogId()
+                                + ", reason=" + userReason
+                )
+        );
     }
 
     @Override
-    public void onDialogProviderAbort(CAPDialog capDialog, PAbortCauseType pAbortCauseType) {
+    public void onDialogProviderAbort(
+            CAPDialog dialog,
+            PAbortCauseType cause) {
 
+        requestTracker.fail(
+                dialog.getLocalDialogId(),
+                new IllegalStateException(
+                        "CAP Provider Abort. Dialog ID="
+                                + dialog.getLocalDialogId()
+                                + ", cause=" + cause
+                )
+        );
     }
 
     @Override
@@ -49,18 +79,35 @@ public class CapClientListener implements
     @Override
     public void onDialogRelease(CAPDialog dialog) {
 
+        long dialogId = dialog.getLocalDialogId();
+
         System.out.println(
-                "CAP dialog released. Dialog ID=" +
-                        dialog.getLocalDialogId()
+                "CAP dialog released. Dialog ID=" + dialogId
+        );
+
+        requestTracker.fail(
+                dialogId,
+                new IllegalStateException(
+                        "CAP dialog released without Continue. Dialog ID="
+                                + dialogId
+                )
         );
     }
 
     @Override
     public void onDialogTimeout(CAPDialog dialog) {
 
+        long dialogId = dialog.getLocalDialogId();
+
         System.err.println(
-                "CAP dialog timeout. Dialog ID=" +
-                        dialog.getLocalDialogId()
+                "CAP dialog timeout. Dialog ID=" + dialogId
+        );
+
+        requestTracker.fail(
+                dialogId,
+                new TimeoutException(
+                        "CAP dialog timeout: " + dialogId
+                )
         );
     }
 
@@ -95,10 +142,13 @@ public class CapClientListener implements
         CAPDialogCircuitSwitchedCall dialog =
                 request.getCAPDialog();
 
+        long dialogId = dialog.getLocalDialogId();
+
         System.out.println(
-                "CAP Continue received. Dialog ID=" +
-                        dialog.getLocalDialogId()
+                "CAP Continue received. Dialog ID=" + dialogId
         );
+
+        requestTracker.complete(dialogId);
     }
 
     @Override
@@ -257,18 +307,54 @@ public class CapClientListener implements
     }
 
     @Override
-    public void onErrorComponent(CAPDialog capDialog, Long aLong, CAPErrorMessage capErrorMessage) {
+    public void onErrorComponent(
+            CAPDialog dialog,
+            Long invokeId,
+            CAPErrorMessage error) {
 
+        requestTracker.fail(
+                dialog.getLocalDialogId(),
+                new IllegalStateException(
+                        "CAP component error. Dialog ID="
+                                + dialog.getLocalDialogId()
+                                + ", invokeId=" + invokeId
+                                + ", error=" + error
+                )
+        );
     }
 
     @Override
-    public void onRejectComponent(CAPDialog capDialog, Long aLong, Problem problem, boolean b) {
+    public void onRejectComponent(
+            CAPDialog dialog,
+            Long invokeId,
+            Problem problem,
+            boolean isLocalOriginated) {
 
+        requestTracker.fail(
+                dialog.getLocalDialogId(),
+                new IllegalStateException(
+                        "CAP component rejected. Dialog ID="
+                                + dialog.getLocalDialogId()
+                                + ", invokeId=" + invokeId
+                                + ", problem=" + problem
+                )
+        );
     }
 
-    @Override
-    public void onInvokeTimeout(CAPDialog capDialog, Long aLong) {
 
+    @Override
+    public void onInvokeTimeout(
+            CAPDialog dialog,
+            Long invokeId) {
+
+        requestTracker.fail(
+                dialog.getLocalDialogId(),
+                new TimeoutException(
+                        "CAP invoke timeout. Dialog ID="
+                                + dialog.getLocalDialogId()
+                                + ", invokeId=" + invokeId
+                )
+        );
     }
 
     @Override
