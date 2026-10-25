@@ -1,5 +1,7 @@
+
 package org.example.camel.generator;
 
+import org.example.camel.config.SigtranConfig;
 import org.example.camel.listener.CapClientListener;
 import org.restcomm.protocols.ss7.cap.CAPStackImpl;
 import org.restcomm.protocols.ss7.cap.api.CAPProvider;
@@ -11,41 +13,55 @@ import org.restcomm.protocols.ss7.indicator.RoutingIndicator;
 import org.restcomm.protocols.ss7.sccp.parameter.SccpAddress;
 import org.restcomm.protocols.ss7.cap.api.CAPApplicationContext;
 import org.restcomm.protocols.ss7.cap.api.service.circuitSwitchedCall.CAPDialogCircuitSwitchedCall;
-import org.example.camel.config.SigtranConfig;
 
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 public class CapClient {
-
-    private static final String STACK_NAME = "CamelGeneratorCap";
 
     private final CAPStackImpl capStack;
     private final CapClientListener listener;
 
     private final SccpProvider sccpProvider;
     private final SigtranConfig config;
+    private final Path persistDir;
+
     private final CapRequestTracker requestTracker =
             new CapRequestTracker();
 
     public CapClient(
             TCAPProvider tcapProvider,
             SccpProvider sccpProvider,
-            SigtranConfig config
+            SigtranConfig config,
+            Path persistDir
     ) {
+
         this.config = Objects.requireNonNull(config);
-        this.sccpProvider = sccpProvider;
+        this.sccpProvider = Objects.requireNonNull(sccpProvider);
+        this.persistDir = Objects.requireNonNull(persistDir);
 
         this.capStack = new CAPStackImpl(
                 config.stackName() + "Cap",
-                tcapProvider
+                Objects.requireNonNull(tcapProvider)
         );
 
-        this.listener = new CapClientListener(requestTracker);
+        // Каталог сохранения CAP-конфигурации
+        capStack.setPersistDir(
+                this.persistDir.toString()
+        );
+
+        this.listener = new CapClientListener(
+                requestTracker
+        );
     }
 
     public void start() throws Exception {
+
         System.out.println("Starting CAP client...");
+        System.out.println(
+                "CAP config directory: " + persistDir
+        );
 
         capStack.start();
 
@@ -63,6 +79,7 @@ public class CapClient {
     }
 
     public void stop() {
+
         capStack.stop();
 
         System.out.println("CAP client stopped");
@@ -72,7 +89,7 @@ public class CapClient {
         return capStack.getCAPProvider();
     }
 
-    public CapRequest sendInitialDP(int serviceKey) throws Exception {
+public CapRequest sendInitialDP(int serviceKey) throws Exception {
 
         CAPProvider provider = capStack.getCAPProvider();
 

@@ -54,7 +54,8 @@ public class SigtranClientManager implements AutoCloseable {
             capClient = new CapClient(
                     tcapClient.getStack().getProvider(),
                     sccpClient.getStack().getSccpProvider(),
-                    config
+                    config,
+                    sctpClient.getPersistDir()
             );
 
             capClient.start();
