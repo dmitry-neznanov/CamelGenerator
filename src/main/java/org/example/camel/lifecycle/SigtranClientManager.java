@@ -35,10 +35,10 @@ public class SigtranClientManager implements AutoCloseable {
             sctpClient.start();
 
             m3uaClient = new M3uaClient(
-                    sctpClient.getManagement(),
-                    sctpClient.getAssociationName(),
+                    sctpClient,
                     config
             );
+
             m3uaClient.start();
 
             sccpClient = new SccpClient(
