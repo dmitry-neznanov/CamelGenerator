@@ -14,8 +14,6 @@ import java.util.Objects;
 
 public class SccpClient {
 
-
-
     private static final int SAP_ID = 1;
     private static final int MTP3_ID = 1;
 
@@ -24,14 +22,12 @@ public class SccpClient {
 
     private static final int DESTINATION_ID = 1;
 
-
     private static final int FIRST_SLS = 0;
     private static final int LAST_SLS = 255;
     private static final int SLS_MASK = 255;
 
     private static final int REMOTE_SPC_ID = 1;
     private static final int REMOTE_SSN_ID = 1;
-
 
     private static final String LOCAL_GT_DIGITS = "";
 
