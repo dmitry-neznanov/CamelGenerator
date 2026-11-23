@@ -81,10 +81,6 @@ public class CapClientListener implements
 
         long dialogId = dialog.getLocalDialogId();
 
-        System.out.println(
-                "CAP dialog released. Dialog ID=" + dialogId
-        );
-
         requestTracker.fail(
                 dialogId,
                 new IllegalStateException(

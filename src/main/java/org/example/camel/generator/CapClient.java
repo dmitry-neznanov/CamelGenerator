@@ -161,10 +161,6 @@ public CapRequest sendInitialDP(int serviceKey) throws Exception {
             // Отправляем InitialDP только один раз
             dialog.send();
 
-            System.out.println(
-                    "CAP InitialDP sent. Dialog ID=" + dialogId
-            );
-
             return new CapRequest(dialogId, future);
 
         } catch (Exception e) {
